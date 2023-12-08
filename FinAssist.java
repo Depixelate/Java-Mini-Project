@@ -14,7 +14,6 @@ enum TransactionType {
 // Transaction interface
 
 class BasicTransactionData {
-    private String name;
     private double amount;
     private String description;
     private String tag;
