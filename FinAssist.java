@@ -586,6 +586,11 @@ public class FinAssist {
             System.exit(1);
         }
 
+        System.out.println("ALERTS: ");
+        for (DatedTransaction datedTransaction : datedTransactions) {
+            datedTransaction.getAlert().send(datedTransaction);
+        }
+
         while (true) {
 
             // Display the menu
