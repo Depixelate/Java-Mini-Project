@@ -498,22 +498,6 @@ class QuickSort {
 }
 
 public class FinAssist {
-    public static Map<Integer, List<TransactionRecord>> groupByYear(List<TransactionRecord> records) {
-        return records.stream()
-                .collect(Collectors.groupingBy(record -> record.getDate().getYear()));
-    }
-
-    // Group by Month
-    public static Map<Integer, List<TransactionRecord>> groupByMonth(List<TransactionRecord> records) {
-        return records.stream()
-                .collect(Collectors.groupingBy(record -> record.getDate().getMonthValue()));
-    }
-
-    // Group by Day
-    public static Map<Integer, List<TransactionRecord>> groupByDay(List<TransactionRecord> records) {
-        return records.stream()
-                .collect(Collectors.groupingBy(record -> record.getDate().getDayOfMonth()));
-    }
 
     public static ArrayList<TransactionRecord> readTransactionRecords() throws IOException {
         File records = new File("records.txt");
@@ -531,7 +515,7 @@ public class FinAssist {
         return transactionRecords;
     }
 
-    public static void writeTransactionRecords(ArrayList<TransactionRecord> transactionRecords) throws IOException {
+    public static void writeJSON(TransactionRecord[] transactionRecords) throws IOException {
         File records = new File("records.txt");
         PrintWriter writer = new PrintWriter(new FileWriter(records));
         for (TransactionRecord transactionRecord : transactionRecords) {
@@ -566,7 +550,7 @@ public class FinAssist {
         return datedTransactions;
     }
 
-    public static void writeDatedTransactions(ArrayList<DatedTransaction> datedTransactions) throws IOException {
+    public static void writeJSON(DatedTransaction[] datedTransactions) throws IOException {
         File datedTransactionFile = new File("datedTransactions.txt");
         PrintWriter writer = new PrintWriter(new FileWriter(datedTransactionFile));
         for (DatedTransaction datedTransaction : datedTransactions) {
@@ -719,8 +703,8 @@ public class FinAssist {
                 case 4:
                     System.out.println("Exiting...");
                     try {
-                        writeTransactionRecords(transactionRecords);
-                        writeDatedTransactions(datedTransactions);
+                        writeJSON(transactionRecords.toArray(TransactionRecord[]::new));
+                        writeJSON(datedTransactions.toArray(DatedTransaction[]::new));
                     } catch (IOException e) {
                         System.out.println("Error writing to file: " + e.getMessage());
                     }
