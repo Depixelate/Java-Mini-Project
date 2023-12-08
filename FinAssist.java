@@ -14,6 +14,7 @@ enum TransactionType {
 // Transaction interface
 
 class BasicTransactionData {
+    private String name;
     private double amount;
     private String description;
     private String tag;
@@ -25,6 +26,7 @@ class BasicTransactionData {
         this.tag = tag;
         this.alert = alert;
     }
+    
 
     public double amount() {
         return this.amount;
@@ -390,13 +392,13 @@ class EmergencyAlert extends Alert {
     @Override
     void send(DatedTransaction transaction) {
         if(transaction.getNextDueDate().isBefore(LocalDate.now())) {
-            System.out.println("EMERGENCY ALERT: You have missed your bill payment!");
+            System.out.println("EMERGENCY ALERT: You have missed your bill payment for " + transaction.getDescription() + "!");
             System.out.println("This payment is very important, please pay your bill ASAP!");
             return;
         }
 
         System.out.println("EMERGENCY ALERT: You only have "
-                + ChronoUnit.DAYS.between(LocalDate.now(), transaction.getNextDueDate()) + " days to pay your bill!");
+                + ChronoUnit.DAYS.between(LocalDate.now(), transaction.getNextDueDate()) + " days to pay your bill for " + transaction.getDescription() + "!");
         System.out.println("This payment is very important, please pay your bill ASAP!");
         // Add any additional logic needed for emergency alerts
     }
@@ -418,11 +420,11 @@ class MildAlert extends Alert {
     @Override
     void send(DatedTransaction transaction) {
         if(transaction.getNextDueDate().isBefore(LocalDate.now())) {
-            System.out.println("Mild Alert: You have missed your bill payment!");
+            System.out.println("Mild Alert: You have missed your bill payment for" + transaction.getDescription() + "!");
             System.out.println("Please pay your bill soon.");
             return;
         }
-        System.out.println("Mild Alert: You have a bill due in "
+        System.out.println("Mild Alert: For " + transaction.getDescription() + " You have a bill due in "
                 + ChronoUnit.DAYS.between(LocalDate.now(), transaction.getNextDueDate()) + " days.");
         System.out.println("Consider paying your bill soon.");
         // Add any additional logic needed for mild alerts
