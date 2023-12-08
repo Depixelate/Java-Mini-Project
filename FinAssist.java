@@ -1,7 +1,6 @@
 import java.util.*;
 import java.util.stream.Collectors;
 import java.io.*;
-import java.text.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.*;
@@ -14,7 +13,34 @@ enum TransactionType {
 
 // Transaction interface
 
-record BasicTransactionData(double amount, String description, String tag, Alert alert) {
+class BasicTransactionData {
+    private double amount;
+    private String description;
+    private String tag;
+    private Alert alert;
+
+    public BasicTransactionData(double amount, String description, String tag, Alert alert) {
+        this.amount = amount;
+        this.description = description;
+        this.tag = tag;
+        this.alert = alert;
+    }
+
+    public double amount() {
+        return this.amount;
+    }
+
+    public String description() {
+        return this.description;
+    }
+
+    public String tag() {
+        return this.tag;
+    }
+
+    public Alert alert() {
+        return this.alert;
+    }
 }
 
 class NegativeAmountException extends Exception {
@@ -89,9 +115,6 @@ class ReadUtils {
             }
         }
 
-        // double amount = Double.parseDouble(scan.nextLine());
-        // scan.nextLine(); // Consume the newline character
-
         System.out.print("Enter description: ");
         String description = scan.nextLine();
 
@@ -106,30 +129,12 @@ class ReadUtils {
 }
 
 class JSON {
-    public static String toJsonArray(String[] array) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        for (int i = 0; i < array.length; i++) {
-            sb.append("\"").append(array[i]).append("\"");
-            if (i != array.length - 1) {
-                sb.append(", ");
-            }
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-
-    public static String[] fromJsonArray(String json) {
-        return json.replace("\"", "").replace("[", "").replace("]", "").split(", ");
-    }
-
     public static HashMap<String, String> jsonToHashMap(String json) {
         json.replace("\n", "");
         json.replace("\"", "");
         HashMap<String, String> map = new HashMap<>();
-        String[] pairs = json.replace("{", "").replace("}", "").split(", (?!h)"); // The regex here is a bit hacky, used
-                                                                                  // to split on commas but not commas
-                                                                                  // outside square brackets
+        String[] pairs = json.replace("{", "").replace("}", "").split(", "); // The regex here is a bit hacky, used
+                                                                                
         for (String pair : pairs) {
             String[] keyValue = pair.split(": ");
             map.put(keyValue[0], keyValue[1]);
@@ -265,10 +270,6 @@ class OneTimeTransaction extends DatedTransaction {
         // btd.alert().setTransaction(ott);
         return ott;
     }
-    // @Override
-    // public void recordTransaction() {
-    // // Implementation to record one-time transaction
-    // }
 
     @Override
     public String toJSON() {
@@ -338,18 +339,13 @@ class RecurringTransaction extends DatedTransaction {
 
         RecurringTransaction rt = new RecurringTransaction(btd.amount(), btd.description(), btd.tag(), startDate,
                 periodBetweenPayments, btd.alert());
-        // rt.getAlert().setTransaction(rt);
+
         return rt;
     }
 
     public String toString() {
         return "Type: Recurring, Amount: " + amount + ", Description: " + description + ", Tag: " + tag + ", Start Date: " + startDate + ", Days Between Payments: " + periodBetweenPayments.getDays() + ", Alert: " + alert;
     }
-
-    // @Override
-    // public void recordTransaction() {
-    // // Implementation to record recurring transaction
-    // }
 
     @Override
     public String toJSON() {
@@ -370,63 +366,6 @@ class RecurringTransaction extends DatedTransaction {
         return new RecurringTransaction(amount, description, tag, startDate, periodBetweenPayments, alert);
     }
 }
-
-// EmergencyTransaction class implementing Transaction interface
-// class EmergencyTransaction extends Transaction {
-// private double amount;
-// private String description;
-// private String tag;
-// private Date dueDate;
-
-// // Constructor
-// public EmergencyTransaction(double amount, String description, String tag,
-// Date dueDate) {
-// this.amount = amount;
-// this.description = description;
-// this.tag = tag;
-// this.dueDate = dueDate;
-// }
-
-// // Static method to create an EmergencyTransaction based on user input
-// public static EmergencyTransaction createEmergencyTransaction(Scanner scan) {
-// System.out.print("Enter amount: ");
-// double amount = scan.nextDouble();
-// scan.nextLine(); // Consume the newline character
-
-// System.out.print("Enter description: ");
-// String description = scan.nextLine();
-
-// System.out.print("Enter tag: ");
-// String tag = scan.nextLine();
-
-// System.out.print("Enter due date (yyyy-MM-dd): ");
-// String dueDateString = scan.nextLine();
-
-// SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-// Date dueDate = null;
-// try {
-// dueDate = dateFormat.parse(dueDateString);
-// } catch (ParseException e) {
-// System.out.println("Invalid date format. Transaction creation failed.");
-// return null;
-// }
-
-// return new EmergencyTransaction(amount, description, tag, dueDate);
-// }
-
-// @Override
-// public void recordTransaction() {
-// // Implementation to record emergency transaction
-// }
-
-// @Override
-// public String toJSON() {
-// // Implementation to convert to JSON format
-// return "{ \"type\": \"EMERGENCY\", \"amount\": " + amount + ",
-// \"description\": \"" + description + "\", \"tag\": \"" + tag + "\",
-// \"dueDate\": \"" + dueDate + "\" }";
-// }
-// }
 
 // Abstract class for alerts
 abstract class Alert implements JSONConvertable {
@@ -556,186 +495,6 @@ class QuickSort {
     }
 }
 
-// Interface for JSON conversion
-
-// Exception class for custom exceptions
-// class FinAssistException extends Exception {
-// public FinAssistException(String message) {
-// super(message);
-// }
-// }
-
-// class FinAssistApp {
-// private Map<String, List<Transaction>> accountsTransactions;
-
-// // Constructor
-// public FinAssistApp() {
-// this.accountsTransactions = new HashMap<>();
-// }
-
-// // Method to record a transaction for a specific account
-// public void recordTransaction(Account account, Transaction transaction) {
-// String accountNumber = account.getAccountNumber();
-
-// // If the account is not found, create a new list for this account
-// accountsTransactions.computeIfAbsent(accountNumber, k -> new
-// ArrayList<>()).add(transaction);
-
-// transaction.recordTransaction();
-// account.displayAccountDetails(); // Display updated account details
-// System.out.println("Transaction recorded successfully.");
-// }
-
-// // Method to save transactions to a file for a specific account
-// public void saveTransactionsToFile(Account account, String fileName) {
-// String accountNumber = account.getAccountNumber();
-// List<Transaction> accountTransactions =
-// accountsTransactions.get(accountNumber);
-
-// if (accountTransactions != null) {
-// try (PrintWriter writer = new PrintWriter(new FileWriter(fileName))) {
-// for (Transaction transaction : accountTransactions) {
-// writer.println(transaction.toJSON());
-// }
-// System.out.println("Transactions saved successfully for account: " +
-// accountNumber);
-// } catch (IOException e) {
-// System.err.println("Error saving transactions to file: " + e.getMessage());
-// }
-// } else {
-// System.out.println("Account not found. Transactions not saved.");
-// }
-// }
-
-// // Method to load transactions from a file for a specific account
-// public void loadTransactionsFromFile(Account account, String fileName) {
-// String accountNumber = account.getAccountNumber();
-
-// try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
-// String line;
-// while ((line = reader.readLine()) != null) {
-// // Assuming each line in the file represents a JSON-formatted transaction
-// Transaction transaction = parseJSON(line);
-// if (transaction != null) {
-// accountsTransactions.computeIfAbsent(accountNumber, k -> new
-// ArrayList<>()).add(transaction);
-// }
-// }
-// System.out.println("Transactions loaded successfully for account: " +
-// accountNumber);
-// } catch (IOException e) {
-// System.err.println("Error loading transactions from file: " +
-// e.getMessage());
-// }
-// }
-
-// // Helper method to parse JSON and create a Transaction object
-// private Transaction parseJSON(String json) {
-// // Implementation to parse JSON and create a Transaction object
-// // You need to implement this based on your JSON format and transaction
-// classes
-// return null;
-// }
-// }
-
-// class Account {
-// private String panNumber;
-// private String accountName;
-// private String accountNumber;
-// private double balance;
-// private int pin;
-
-// public Account(String panNumber, String accountName, String accountNumber,
-// double balance) {
-// this.panNumber = panNumber;
-// this.accountName = accountName;
-// this.accountNumber = accountNumber;
-// this.balance = balance;
-// this.pin = generateRandomPIN(); // Generate and assign a random 4-digit PIN
-// System.out.println("Your PIN is: " + pin);
-// displayAccountDetails();
-// }
-
-// public String getAccountNumber() {
-// return this.accountNumber;
-// }
-
-// private int generateRandomPIN() {
-// Random random = new Random();
-// return 1000 + random.nextInt(9000);
-// }
-
-// public void displayAccountDetails() {
-// System.out.println("Account Details:");
-// System.out.println("Account Name: " + accountName);
-// System.out.println("Account Number: " + accountNumber);
-// System.out.println("Balance: " + balance);
-// }
-
-// public void deposit(double amount) {
-// Scanner scan = new Scanner(System.in);
-// System.out.println("Enter your PAN number to deposit:");
-// String enteredPanNumber = scan.nextLine();
-// try {
-// if (enteredPanNumber.equals(panNumber)) {
-// balance += amount;
-// System.out.println("Deposited: " + amount + ", Current Balance: " + balance);
-// } else {
-// scan.close();
-// throw new IncorrectPanException("Incorrect PAN number. Deposit not
-// allowed.");
-// }
-// } catch (IncorrectPanException e) {
-// System.out.println(e.getMessage());
-// }
-// scan.close();
-// balance += amount;
-// System.out.println("Deposited: " + amount + ", Current Balance: " + balance);
-// }
-
-// public void withdraw(double amount) {
-// if (balance >= amount) {
-// balance -= amount;
-// System.out.println("Debited: " + amount + ", Current Balance: " + balance);
-// } else {
-// System.out.println("Insufficient funds.");
-// }
-// }
-
-// public static Account createAccount() {
-// Scanner scan = new Scanner(System.in);
-
-// System.out.println("Enter PAN Number:");
-// String panNumber = scan.nextLine();
-
-// System.out.println("Enter Account Name:");
-// String accountName = scan.nextLine();
-
-// System.out.println("Enter Account Number:");
-// String accountNumber = scan.nextLine();
-
-// System.out.println("Enter Initial Balance:");
-// double initialBalance = scan.nextDouble();
-
-// // Close the scan to prevent resource leak
-// scan.close();
-
-// // Create and return a new account
-// return new Account(panNumber, accountName, accountNumber, initialBalance);
-// }
-
-// // New method to check account balance
-// public double checkAccountBalance() {
-// return this.balance;
-// }
-// }
-
-// class IncorrectPanException extends Exception {
-// public IncorrectPanException(String message) {
-// super(message);
-// }
-// }
-
 public class FinAssist {
     public static Map<Integer, List<TransactionRecord>> groupByYear(List<TransactionRecord> records) {
         return records.stream()
@@ -827,16 +586,10 @@ public class FinAssist {
             System.exit(1);
         }
 
-        // Account userAccount = null; // Initialize user account variable
-        // FinAssistApp app = new FinAssistApp();
         while (true) {
 
             // Display the menu
             System.out.println("\n===== FinAssist Menu =====");
-            // System.out.println("1. Create an Account");
-            // System.out.println("2. Check Account Balance");
-            // System.out.println("3. Deposit");
-            // System.out.println("4. Withdraw");
             System.out.println("1. Record Transaction");
             System.out.println("2. View Transactions");
             System.out.println("3. View/Add Scheduled Transactions");
@@ -889,7 +642,6 @@ public class FinAssist {
                             for (TransactionRecord record : records) {
                                 System.out.println(record);
                             }
-                            // Call method to view transactions by Tag
                             break;
                         case 3:
                             System.out.println("Enter minimum amount: ");
@@ -904,7 +656,6 @@ public class FinAssist {
                             for (TransactionRecord record : records) {
                                 System.out.println(record);
                             }
-                            // Call method to view transactions by Amount
                             break;
                         case 4:
                             System.out.println("Enter transaction type: ");
@@ -915,7 +666,6 @@ public class FinAssist {
                             for (TransactionRecord record : records) {
                                 System.out.println(record);
                             }
-                            // Call method to view transactions by Transaction Type
                             break;
                     }
                     break;
@@ -969,61 +719,6 @@ public class FinAssist {
                     }
                     System.exit(0);
                     break;
-                // case 5:
-                //     // Record Transaction
-                //     if (userAccount != null) {
-                //         System.out.print("Choose Transaction Type (1. One-Time, 2. Recurring, 3. Emergency): ");
-                //         int transactionTypeChoice = scan.nextInt();
-                //         scan.nextLine(); // Consume the newline character
-
-                //         Transaction transaction = null;
-                //         switch (transactionTypeChoice) {
-                //             case 1:
-                //                 transaction = OneTimeTransaction.readOneTimeTransaction(scan);
-                //                 break;
-                //             case 2:
-                //                 transaction = RecurringTransaction.createRecurringTransaction(scan);
-                //                 break;
-                //             case 3:
-                //                 transaction = EmergencyTransaction.createEmergencyTransaction(scan);
-                //                 break;
-                //             default:
-                //                 System.out.println("Invalid transaction type choice.");
-                //         }
-
-                //         if (transaction != null) {
-                //             app.recordTransaction(userAccount, transaction);
-                //         }
-                //     } else {
-                //         System.out.println("Account not created yet. Please create an account first.");
-                //     }
-                //     break;
-                // case 6:
-                //     // Save Transactions to File
-                //     if (userAccount != null) {
-                //         System.out.print("Enter the file name to save transactions: ");
-                //         String fileName = scan.nextLine();
-                //         app.saveTransactionsToFile(userAccount, fileName);
-                //     } else {
-                //         System.out.println("Account not created yet. Please create an account first.");
-                //     }
-                //     break;
-                // case 7:
-                //     // Load Transactions from File
-                //     if (userAccount != null) {
-                //         System.out.print("Enter the file name to load transactions: ");
-                //         String fileName = scan.nextLine();
-                //         app.loadTransactionsFromFile(userAccount, fileName);
-                //     } else {
-                //         System.out.println("Account not created yet. Please create an account first.");
-                //     }
-                //     break;
-                // case 8:
-                //     // Exit
-                //     System.out.println("Exiting the FinAssist application. Goodbye!");
-                //     scan.close();
-                //     System.exit(0);
-                //     break;
                 default:
                     System.out.println("Invalid choice. Please enter a valid option.");
 
