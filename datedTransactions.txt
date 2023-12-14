@@ -1,0 +1,1 @@
+{ "objectType": "TRANSACTION", "type": "RECURRING", "amount": 5000.0, "description": "Hi", "tag": "hi", "startDate": "2025-05-10", "periodBetweenPayments": "P500D", "alert": "EMERGENCY"}

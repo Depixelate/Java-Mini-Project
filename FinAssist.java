@@ -23,7 +23,6 @@ class BasicTransactionData {
         this.description = description;
         this.tag = tag;
     }
-    
 
     public double amount() {
         return this.amount;
@@ -50,13 +49,18 @@ class InvalidAlertTypeException extends Exception {
     }
 }
 
+class InvalidInputException extends Exception {
+    public InvalidInputException() {
+        super("Invalid input!");
+    }
+}
+
 class ReadUtils {
     public static Alert readAlert(Scanner scan) {
         Alert alert = null;
         while (true) {
             try {
-                System.out.print("Choose Alert Type (1. Mild, 2. Emergency): ");
-                int alertTypeChoice = Integer.parseInt(scan.nextLine());
+                int alertTypeChoice = readInt(scan, "Choose Alert Type (1. Mild, 2. Emergency): ", 1, 2);
                 switch (alertTypeChoice) {
                     case 1:
                         alert = new MildAlert();
@@ -76,16 +80,51 @@ class ReadUtils {
 
         return alert;
     }
-    public static LocalDate readDate(Scanner scan, String msg) {
+
+    public static LocalDate readDate(Scanner scan, String msg, boolean allowEmpty) {
         while (true) {
             try {
                 System.out.print(msg + " (yyyy-MM-dd): ");
-                String dateStr = scan.nextLine();
+                String dateStr = scan.nextLine().trim();
+                if (dateStr.isBlank() && allowEmpty) {
+                    return null;
+                }
                 DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
                 LocalDate date = LocalDate.parse(dateStr, dtf);
                 return date;
             } catch (DateTimeParseException dtpe) {
                 System.out.println("Error, not a valid date! Try again...");
+            }
+        }
+    }
+
+    public static LocalDate readDate(Scanner scan, String msg) {
+        return readDate(scan, msg, false);
+    }
+
+    public static double readDouble(Scanner scan, String msg) {
+        while (true) {
+            try {
+                System.out.print(msg);
+                double input = Double.parseDouble(scan.nextLine());
+                return input;
+            } catch (NumberFormatException nfe) {
+                System.out.println("Error, not a valid number! Try again...");
+            }
+        }
+    }
+
+    public static int readInt(Scanner scan, String msg, int min, int max) {
+        while (true) {
+            try {
+                System.out.print(msg);
+                int input = Integer.parseInt(scan.nextLine());
+                if (input < min || input > max) {
+                    throw new InvalidInputException();
+                }
+                return input;
+            } catch (Exception e) {
+                System.out.println("Error, not a valid input! Try again...");
             }
         }
     }
@@ -99,7 +138,7 @@ class ReadUtils {
                     msg += " (Positive for deposit, Negative for withdrawal)";
                 }
                 System.out.print(msg + ": ");
-                //System.omut.print("Enter amount: ");
+                // System.omut.print("Enter amount: ");
                 amount = Double.parseDouble(scan.nextLine());
                 if (amount < 0 && !allowNegative) {
                     throw new NegativeAmountException();
@@ -114,10 +153,10 @@ class ReadUtils {
         }
 
         System.out.print("Enter description: ");
-        String description = scan.nextLine();
+        String description = scan.nextLine().trim();
 
         System.out.print("Enter tag: ");
-        String tag = scan.nextLine();
+        String tag = scan.nextLine().trim().toLowerCase();
         if (tag.isBlank()) {
             tag = "";
         }
@@ -130,8 +169,9 @@ class JSON {
     public static HashMap<String, String> jsonToHashMap(String json) {
         json = json.replace("\n", "").replace("\"", "");
         HashMap<String, String> map = new HashMap<>();
-        String[] pairs = json.replace("{", "").replace("}", "").trim().split(", "); // The regex here is a bit hacky, used
-                                                                                
+        String[] pairs = json.replace("{", "").replace("}", "").trim().split(", "); // The regex here is a bit hacky,
+                                                                                    // used
+
         for (String pair : pairs) {
             String[] keyValue = pair.split(": ");
             map.put(keyValue[0].trim(), keyValue[1].trim());
@@ -193,9 +233,17 @@ class TransactionRecord extends Transaction {
 
     public static TransactionRecord readTransactionRecord(Scanner scan) {
         BasicTransactionData btd = ReadUtils.readBasicTransactionData(scan, true);
-        LocalDate date = ReadUtils.readDate(scan, "Enter transaction date: ");
-        System.out.print("Choose Transaction Type (One Time, Recurring, Emergency): ");
-        TransactionType type = TransactionType.valueOf(scan.nextLine().toUpperCase().replace(" ", "_"));
+        LocalDate date = ReadUtils.readDate(scan, "Enter transaction date");
+        TransactionType type = null;
+        while (true) {
+            try {
+                System.out.print("Choose Transaction Type (One Time, Recurring, Emergency): ");
+                type = TransactionType.valueOf(scan.nextLine().trim().toUpperCase().replace(" ", "_"));
+                break;
+            } catch (Exception e) {
+                System.out.println("Invalid transaction type! Try again...");
+            }
+        }
         TransactionRecord tr = new TransactionRecord(btd.amount(), btd.description(), btd.tag(), date, type);
         // btd.alert().setTransaction(tr);
         return tr;
@@ -220,7 +268,7 @@ class TransactionRecord extends Transaction {
 
     public String toString() {
         return "Amount: " + amount + ", Description: " + description + ", Tag: " + tag + ", Date: " + date
-                + ", Type: " + type;
+                + ", Type: " + type.toString().replace("_", " ");
     }
 }
 
@@ -233,6 +281,7 @@ abstract class DatedTransaction extends Transaction {
     }
 
     abstract LocalDate getNextDueDate();
+
     abstract TransactionRecord payTransaction();
 
     public Alert getAlert() {
@@ -255,7 +304,7 @@ class OneTimeTransaction extends DatedTransaction {
     }
 
     public TransactionRecord payTransaction() {
-        return new TransactionRecord(amount, description, tag, LocalDate.now(), TransactionType.ONE_TIME);
+        return new TransactionRecord(-amount, description, tag, LocalDate.now(), TransactionType.ONE_TIME);
     }
 
     // Static method to create a OneTimeTransaction based on user input
@@ -273,7 +322,7 @@ class OneTimeTransaction extends DatedTransaction {
     public String toJSON() {
         // Implementation to convert to JSON format
         return "{ \"objectType\": \"TRANSACTION\", \"type\": \"ONE_TIME\", \"amount\": " + amount
-                + ", \"description\": \"" + description + "\", \"tag\": "  +
+                + ", \"description\": \"" + description + "\", \"tag\": " +
                 "\"" + getTag() + "\"" + ", \"dueDate\": \"" + dueDate + "\", \"alert\": " + getAlert().toJSON() + "}";
     }
 
@@ -282,12 +331,13 @@ class OneTimeTransaction extends DatedTransaction {
         String description = json.get("description");
         String tag = json.get("tag");
         LocalDate dueDate = LocalDate.parse(json.get("dueDate"));
-        Alert alert = Alert.fromJSON(JSON.jsonToHashMap(json.get("alert")));
+        Alert alert = Alert.fromJSON(json.get("alert"));
         return new OneTimeTransaction(amount, description, tag, dueDate, alert);
     }
 
     public String toString() {
-        return "Type: One-Time, Amount: " + amount + ", Description: " + description + ", Tag: " + tag + ", Due Date: " + dueDate;
+        return "Type: One-Time, Amount: " + amount + ", Description: " + description + ", Tag: " + tag + ", Due Date: "
+                + dueDate;
     }
 }
 
@@ -306,12 +356,12 @@ class RecurringTransaction extends DatedTransaction {
 
     public TransactionRecord payTransaction() {
         startDate = getNextDueDate().plus(periodBetweenPayments);
-        return new TransactionRecord(amount, description, tag, LocalDate.now(), TransactionType.RECURRING);
+        return new TransactionRecord(-amount, description, tag, LocalDate.now(), TransactionType.RECURRING);
     }
 
     public LocalDate getNextDueDate() {
         LocalDate today = LocalDate.now();
-        if (today.compareTo(startDate)<=0) {
+        if (today.compareTo(startDate) <= 0) {
             return startDate;
         }
         Period timeBetween = Period.between(startDate, today);
@@ -328,9 +378,12 @@ class RecurringTransaction extends DatedTransaction {
             try {
                 System.out.print("Enter days between payments: ");
                 daysBetweenPayments = Integer.parseInt(scan.nextLine());
+                if(daysBetweenPayments <= 0) {
+                    throw new InvalidInputException();
+                }
                 break;
-            } catch (NumberFormatException nfe) {
-                System.out.println("Error, not a valid number! Try again...");
+            } catch (Exception e) {
+                System.out.println("Error, not a valid number of days between payments! Try again...");
             }
         }
         Period periodBetweenPayments = Period.ofDays(daysBetweenPayments);
@@ -342,14 +395,16 @@ class RecurringTransaction extends DatedTransaction {
     }
 
     public String toString() {
-        return "Type: Recurring, Amount: " + amount + ", Description: " + description + ", Tag: " + tag + ", Start Date: " + startDate + ", Days Between Payments: " + periodBetweenPayments.getDays() + ", Alert: " + alert;
+        return "Type: Recurring, Amount: " + amount + ", Description: " + description + ", Tag: " + tag
+                + ", Next Date Due: " + getNextDueDate() + ", Days Between Payments: " + periodBetweenPayments.getDays()
+                + ", Alert: " + alert;
     }
 
     @Override
     public String toJSON() {
         // Implementation to convert to JSON format
         return "{ \"objectType\": \"TRANSACTION\", \"type\": \"RECURRING\", \"amount\": " + getAmount()
-                + ", \"description\": \"" + getDescription() + "\", \"tag\": "  +
+                + ", \"description\": \"" + getDescription() + "\", \"tag\": " +
                 "\"" + getTag() + "\"" + ", \"startDate\": \"" + startDate + "\", \"periodBetweenPayments\": \""
                 + periodBetweenPayments + "\", \"alert\": " + getAlert().toJSON() + "}";
     }
@@ -360,7 +415,7 @@ class RecurringTransaction extends DatedTransaction {
         String tag = json.get("tag");
         LocalDate startDate = LocalDate.parse(json.get("startDate"));
         Period periodBetweenPayments = Period.parse(json.get("periodBetweenPayments"));
-        Alert alert = Alert.fromJSON(JSON.jsonToHashMap(json.get("alert")));
+        Alert alert = Alert.fromJSON(json.get("alert"));
         return new RecurringTransaction(amount, description, tag, startDate, periodBetweenPayments, alert);
     }
 }
@@ -370,8 +425,7 @@ abstract class Alert implements JSONConvertable {
 
     abstract void send(DatedTransaction transaction);
 
-    public static Alert fromJSON(HashMap<String, String> json) {
-        String type = json.get("type");
+    public static Alert fromJSON(String type) {
         switch (type) {
             case "EMERGENCY":
                 return new EmergencyAlert();
@@ -387,14 +441,16 @@ abstract class Alert implements JSONConvertable {
 class EmergencyAlert extends Alert {
     @Override
     void send(DatedTransaction transaction) {
-        if(transaction.getNextDueDate().isBefore(LocalDate.now())) {
-            System.out.println("EMERGENCY ALERT: You have missed your bill payment for " + transaction.getDescription() + "!");
+        if (transaction.getNextDueDate().isBefore(LocalDate.now())) {
+            System.out.printf("EMERGENCY ALERT: You have missed your bill payment for  '%s'!\n",
+                    transaction.getDescription());
             System.out.println("This payment is very important, please pay your bill ASAP!");
             return;
         }
 
         System.out.println("EMERGENCY ALERT: You only have "
-                + ChronoUnit.DAYS.between(LocalDate.now(), transaction.getNextDueDate()) + " days to pay your bill for " + transaction.getDescription() + "!");
+                + ChronoUnit.DAYS.between(LocalDate.now(), transaction.getNextDueDate())
+                + " days to pay your bill for '" + transaction.getDescription() + "'!");
         System.out.println("This payment is very important, please pay your bill ASAP!");
         // Add any additional logic needed for emergency alerts
     }
@@ -415,12 +471,13 @@ class MildAlert extends Alert {
 
     @Override
     void send(DatedTransaction transaction) {
-        if(transaction.getNextDueDate().isBefore(LocalDate.now())) {
-            System.out.println("Mild Alert: You have missed your bill payment for" + transaction.getDescription() + "!");
+        if (transaction.getNextDueDate().isBefore(LocalDate.now())) {
+            System.out.println(
+                    "Mild Alert: You have missed your bill payment for '" + transaction.getDescription() + "'!");
             System.out.println("Please pay your bill soon.");
             return;
         }
-        System.out.println("Mild Alert: For " + transaction.getDescription() + " You have a bill due in "
+        System.out.println("Mild Alert: For '" + transaction.getDescription() + "' You have a bill due in "
                 + ChronoUnit.DAYS.between(LocalDate.now(), transaction.getNextDueDate()) + " days.");
         System.out.println("Consider paying your bill soon.");
         // Add any additional logic needed for mild alerts
@@ -575,16 +632,27 @@ public class FinAssist {
 
         while (true) {
 
-            // Display the menu
-            System.out.println("\n===== FinAssist Menu =====");
-            System.out.println("1. Record Transaction");
-            System.out.println("2. View Transactions");
-            System.out.println("3. View/Add Scheduled Transactions");
-            System.out.println("4. Exit");
-            System.out.print("Enter your choice: ");
+            int choice = -1;
+            while (true) {
+                try {
+                    System.out.println("\n===== FinAssist Menu =====");
+                    System.out.println("1. Record Transaction");
+                    System.out.println("2. View Transactions");
+                    System.out.println("3. Manage Scheduled Transactions");
+                    System.out.println("4. Exit");
+                    System.out.print("Enter your choice: ");
 
-            // Read user choice
-            int choice = Integer.parseInt(scan.nextLine());
+                    // Read user choice
+                    choice = Integer.parseInt(scan.nextLine());
+                    if (choice < 1 || choice > 4) {
+                        throw new InvalidInputException();
+                    }
+                    break;
+                } catch (Exception e) {
+                    System.out.println("Invalid choice! Try again...");
+                }
+            }
+            // Display the menu
 
             switch (choice) {
                 case 1:
@@ -594,31 +662,50 @@ public class FinAssist {
                     transactionRecords.add(tr);
                     break;
                 case 2:
-                    System.out.println("1. View transactions by Date");
-                    System.out.println("2. View transactions by Tag");
-                    System.out.println("3. View transactions by Amount");
-                    System.out.println("4. View transactions by Transaction Type");
-                    System.out.print("Enter your choice: ");
-                    int viewChoice = Integer.parseInt(scan.nextLine());
+                    int viewChoice = -1;
+                    while (true) {
+                        try {
+                            System.out.println("1. View transactions by Date");
+                            System.out.println("2. View transactions by Tag");
+                            System.out.println("3. View transactions by Amount");
+                            System.out.println("4. View transactions by Transaction Type");
+                            System.out.print("Enter your choice: ");
+                            viewChoice = Integer.parseInt(scan.nextLine());
+                            if (viewChoice < 1 || viewChoice > 4) {
+                                throw new InvalidInputException();
+                            }
+                            break;
+                        } catch (Exception e) {
+                            System.out.println("Invalid choice ! Try again...");
+                        }
+                    }
 
                     switch (viewChoice) {
                         case 1:
-                            LocalDate startDate = ReadUtils.readDate(scan, "Enter start date");
-                            LocalDate endDate = ReadUtils.readDate(scan, "Enter end date");
-                            List<TransactionRecord> records = transactionRecords.stream()
-                                    .filter(record -> record.getDate().compareTo(startDate) >= 0
-                                            && record.getDate().compareTo(endDate) <= 0)
-                                    .collect(Collectors.toList());
+                            LocalDate startDate = ReadUtils.readDate(scan,
+                                    "Enter start date(or nothing for no start date)", true);
+                            LocalDate endDate = ReadUtils.readDate(scan, "Enter end date(or nothing for no end date)",
+                                    true);
+                            var stream = transactionRecords.stream();
+                            if (startDate != null) {
+                                stream = stream.filter(record -> record.getDate().compareTo(startDate) >= 0);
+                            }
+                            if (endDate != null) {
+                                stream = stream.filter(record -> record.getDate().compareTo(endDate) <= 0);
+                            }
+
+                            List<TransactionRecord> records = stream.collect(Collectors.toList());
                             QuickSort.sort(records, new DateComparator());
-                            System.out.println("TRANSACTIONS: ");
+                            System.out.println("\nTRANSACTIONS: ");
                             for (TransactionRecord record : records) {
                                 System.out.println(record);
                             }
                             break;
                         case 2:
-                            System.out.println("Enter tags to filter by [separated by tab]: ");
-                            String[] tags = scan.nextLine().split("\t");
-                            final String[] newTags = Arrays.stream(tags).filter(tag -> !tag.isBlank()).toArray(String[]::new);
+                            System.out.print("Enter tags to filter by [separated by TAB]: ");
+                            String[] tags = scan.nextLine().trim().toLowerCase().split("\t");
+                            final String[] newTags = Arrays.stream(tags).filter(tag -> !tag.isBlank())
+                                    .map(tag -> tag.trim()).toArray(String[]::new);
                             records = transactionRecords.stream().filter(record -> {
                                 for (String tag : newTags) {
                                     if (record.getTag().equals(tag)) {
@@ -628,55 +715,80 @@ public class FinAssist {
                                 return false;
                             }).collect(Collectors.toList());
                             QuickSort.sort(records, new TagComparator());
-                            System.out.println("TRANSACTIONS: ");
+                            System.out.println("\nTRANSACTIONS: ");
                             for (TransactionRecord record : records) {
                                 System.out.println(record);
                             }
                             break;
                         case 3:
-                            System.out.println("Enter minimum amount: ");
-                            double minAmount = Double.parseDouble(scan.nextLine());
-                            System.out.println("Enter maximum amount: ");
-                            double maxAmount = Double.parseDouble(scan.nextLine());
+                            double minAmount = ReadUtils.readDouble(scan, "Enter Minimum Amount(Negative for Withdrawals, Positive for Deposits): ");
+                            double maxAmount = ReadUtils.readDouble(scan, "Enter Maximum Amount(Negative for Withdrawals, Positive for Deposits): ");
                             records = transactionRecords.stream()
                                     .filter(record -> record.getAmount() >= minAmount
                                             && record.getAmount() <= maxAmount)
                                     .collect(Collectors.toList());
                             QuickSort.sort(records, new ValueComparator());
-                            System.out.println("TRANSACTIONS: ");
+                            System.out.println("\nTRANSACTIONS: ");
                             for (TransactionRecord record : records) {
                                 System.out.println(record);
                             }
                             break;
                         case 4:
-                            System.out.println("Enter transaction type(One Time, Recurring, Emergency: ");
-                            String type = scan.nextLine();
+                            TransactionType type = null;
+                            while(true) {
+                                try {
+                                    System.out.print("Enter Transaction Type(One Time, Recurring, Emergency): ");
+                                    String typeStr = scan.nextLine().trim();
+                                    type = TransactionType.valueOf(typeStr.toUpperCase().replace(" ", "_"));
+                                    break;
+                                } catch(Exception e) {
+                                    System.out.println("Invalid transaction type! Try again...");
+                                }
+                            }
+
+                            final TransactionType newType = type;
+                            
                             records = transactionRecords.stream()
-                                    .filter(record -> record.getType().equals(TransactionType.valueOf(type.toUpperCase().replace(" ", "_"))))
-                                    .collect(Collectors.toList());
-                            System.out.println("TRANSACTIONS: ");
+                                            .filter(record -> record.getType()
+                                                    .equals(newType))
+                                            .collect(Collectors.toList());
+                            
+                            System.out.println("\nTRANSACTIONS: ");
                             for (TransactionRecord record : records) {
                                 System.out.println(record);
                             }
                             break;
                     }
                     break;
-                    
+
                 case 3:
-                    System.out.println("SCHEDULED TRANSACTIONS: ");
-                    for(int i = 0; i < datedTransactions.size(); i++) {
+                    System.out.println("\nSCHEDULED TRANSACTIONS: ");
+                    for (int i = 0; i < datedTransactions.size(); i++) {
                         System.out.println(i + 1 + ". " + datedTransactions.get(i));
                     }
 
-                    System.out.println();
-                    System.out.println("1. Add One-Time Transaction");
-                    System.out.println("2. Add Recurring Transaction");
-                    System.out.println("3. Delete Transaction");
-                    System.out.println("4. Pay Transaction");
+                    int scheduledChoice = -1;
+                    while (true) {
+                        try {
+                            System.out.println();
+                            System.out.println("1. Add One-Time Transaction");
+                            System.out.println("2. Add Recurring Transaction");
+                            System.out.println("3. Delete Transaction");
+                            System.out.println("4. Pay Transaction");
+                            System.out.println("5. Exit");
 
-                    System.out.print("Enter your choice: ");
-                    int scheduledChoice = Integer.parseInt(scan.nextLine());
-                    switch(scheduledChoice) {
+                            System.out.print("Enter your choice: ");
+                            scheduledChoice = Integer.parseInt(scan.nextLine());
+                            if (scheduledChoice < 1 || scheduledChoice > 5) {
+                                throw new InvalidInputException();
+                            }
+                            break;
+                        } catch (Exception e) {
+                            System.out.println("Invalid choice! Try again...");
+                        }
+                    }
+
+                    switch (scheduledChoice) {
                         case 1:
                             OneTimeTransaction ott = OneTimeTransaction.readOneTimeTransaction(scan);
                             datedTransactions.add(ott);
@@ -686,21 +798,22 @@ public class FinAssist {
                             datedTransactions.add(rt);
                             break;
                         case 3:
-                            System.out.print("Enter the index of the transaction to delete: ");
-                            int index = Integer.parseInt(scan.nextLine());
-                            datedTransactions.remove(index-1);
+                            int index = ReadUtils.readInt(scan, "Enter the index of the transaction to delete: ", 1, datedTransactions.size());
+                            datedTransactions.remove(index - 1);
                             break;
                         case 4:
-                            System.out.print("Enter the index of the transaction to pay: ");
-                            index = Integer.parseInt(scan.nextLine());
-                            TransactionRecord record = datedTransactions.get(index-1).payTransaction();
+                            index = ReadUtils.readInt(scan, "Enter the index of the transaction to pay: ", 1, datedTransactions.size());
+                            TransactionRecord record = datedTransactions.get(index - 1).payTransaction();
                             transactionRecords.add(record);
-                            if(record.getType() == TransactionType.ONE_TIME) {
-                                datedTransactions.remove(index-1);
+                            if (record.getType() == TransactionType.ONE_TIME) {
+                                datedTransactions.remove(index - 1);
                             }
                             break;
+                        case 5:
+                            break;
+                        default:
+                            System.out.println("Invalid choice. Please enter a valid option.");
                     }
-                    System.out.println("Transaction Recorded!");
                     break;
                 case 4:
                     System.out.println("Exiting...");
