@@ -1,0 +1,1 @@
+{ "objectType": "RECORD", "type": "RECURRING", "amount": 1000.0, "description": "Hi Bro", "tag": null, "date": "2023-05-07" }
