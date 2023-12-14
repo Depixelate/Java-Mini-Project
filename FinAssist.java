@@ -206,13 +206,13 @@ class TransactionRecord extends Transaction {
         // Implementation to convert to JSON format
         return "{ \"objectType\": \"RECORD\", \"type\": \"" + type.toString() + "\", \"amount\": " + getAmount()
                 + ", \"description\": \"" + getDescription() + "\", \"tag\": " +
-                getTag() + ", \"date\": \"" + getDate() + "\" }";
+                "\"" + getTag() + "\"" + ", \"date\": \"" + getDate() + "\" }";
     }
 
     public static TransactionRecord fromJSON(HashMap<String, String> json) {
         double amount = Double.parseDouble(json.get("amount"));
         String description = json.get("description");
-        String tag = json.get("tags");
+        String tag = json.get("tag");
         LocalDate date = LocalDate.parse(json.get("date"));
         TransactionType type = TransactionType.valueOf(json.get("type"));
         return new TransactionRecord(amount, description, tag, date, type);
@@ -273,8 +273,8 @@ class OneTimeTransaction extends DatedTransaction {
     public String toJSON() {
         // Implementation to convert to JSON format
         return "{ \"objectType\": \"TRANSACTION\", \"type\": \"ONE_TIME\", \"amount\": " + amount
-                + ", \"description\": \"" + description + "\", \"tag\": " +
-                tag + ", \"dueDate\": \"" + dueDate + "\", \"alert\": " + getAlert().toJSON() + "}";
+                + ", \"description\": \"" + description + "\", \"tag\": "  +
+                "\"" + getTag() + "\"" + ", \"dueDate\": \"" + dueDate + "\", \"alert\": " + getAlert().toJSON() + "}";
     }
 
     public static OneTimeTransaction fromJSON(HashMap<String, String> json) {
@@ -349,8 +349,8 @@ class RecurringTransaction extends DatedTransaction {
     public String toJSON() {
         // Implementation to convert to JSON format
         return "{ \"objectType\": \"TRANSACTION\", \"type\": \"RECURRING\", \"amount\": " + getAmount()
-                + ", \"description\": \"" + getDescription() + "\", \"tag\": " +
-                getTag() + ", \"startDate\": \"" + startDate + "\", \"periodBetweenPayments\": \""
+                + ", \"description\": \"" + getDescription() + "\", \"tag\": "  +
+                "\"" + getTag() + "\"" + ", \"startDate\": \"" + startDate + "\", \"periodBetweenPayments\": \""
                 + periodBetweenPayments + "\", \"alert\": " + getAlert().toJSON() + "}";
     }
 
