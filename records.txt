@@ -1,6 +1,2 @@
-{ "objectType": "RECORD", "type": "RECURRING", "amount": -1000.0, "description": "Hi Mom", "tag": "Sundaresh", "date": "2023-10-10" }
-{ "objectType": "RECORD", "type": "EMERGENCY", "amount": -10000.0, "description": "Paid way too much money", "tag": "yo mama", "date": "2010-05-23" }
-{ "objectType": "RECORD", "type": "RECURRING", "amount": 10000.0, "description": "Pay This some day", "tag": "crud", "date": "2023-12-14" }
-{ "objectType": "RECORD", "type": "ONE_TIME", "amount": -1000.0, "description": "Due Next Week", "tag": "yo mama", "date": "2023-12-14" }
-{ "objectType": "RECORD", "type": "RECURRING", "amount": -10000.0, "description": "Pay This some day", "tag": "crud", "date": "2023-12-14" }
-{ "objectType": "RECORD", "type": "RECURRING", "amount": -5000.0, "description": "Hi", "tag": "hi", "date": "2023-12-14" }
+{ "objectType": "RECORD", "type": "RECURRING", "amount": 1000.0, "description": "Monthly Salary", "tag": "payday", "date": "2023-01-01" }
+{ "objectType": "RECORD", "type": "EMERGENCY", "amount": -5000.0, "description": "Health Emergency", "tag": "health", "date": "2023-02-02" }
